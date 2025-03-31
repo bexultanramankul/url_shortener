@@ -1,0 +1,1 @@
+DROP SEQUENCE IF EXISTS unique_number_seq;
