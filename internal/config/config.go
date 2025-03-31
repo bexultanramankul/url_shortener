@@ -7,15 +7,18 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config - основная структура конфигурации
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
+	Server   ServerConfig   `mapstructure:"server"`
+	Database DatabaseConfig `mapstructure:"database"`
 }
 
+// ServerConfig - настройки сервера
 type ServerConfig struct {
 	Port string `mapstructure:"port"`
 }
 
+// DatabaseConfig - настройки базы данных
 type DatabaseConfig struct {
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
@@ -27,6 +30,7 @@ type DatabaseConfig struct {
 
 var AppConfig Config
 
+// LoadConfig загружает конфигурацию из config.yaml и переменных окружения
 func LoadConfig() {
 	log := logger.Log
 
@@ -35,6 +39,7 @@ func LoadConfig() {
 	viper.AddConfigPath("./configs")
 
 	// Настройка ENV-переменных
+	viper.SetEnvPrefix("URL_SHORTENER") // Префикс для ENV
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
 
