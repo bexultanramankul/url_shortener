@@ -8,6 +8,8 @@ go get github.com/lib/pq
 
 go get github.com/spf13/viper
 
+go get github.com/gorilla/mux
+
 ![Описание изображения](images/url-shortener.png)
 
 ![Описание изображения](images/api.png)
