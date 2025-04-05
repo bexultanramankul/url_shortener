@@ -3,6 +3,7 @@ package generator
 import (
 	"url_shortener/internal/pkg/encoder"
 	"url_shortener/internal/repository"
+	"url_shortener/pkg/logger"
 )
 
 type HashGenerator interface {
@@ -25,20 +26,31 @@ func NewHashGenerator(
 }
 
 func (hg *hashGenerator) GenerateHashBatch(count int) error {
+	logger.Log.Infof("Generating batch of %d hashes...", count)
+
 	numbers, err := hg.uniqueIDRepository.GetUniqueNumbers(count)
 	if err != nil {
+		logger.Log.Errorf("Failed to get unique numbers: %v", err)
 		return err
 	}
+
+	logger.Log.Infof("Successfully retrieved %d unique numbers for hash generation.", len(numbers))
 
 	hashes := make([]string, 0, count)
 	for _, num := range numbers {
-		hashes = append(hashes, encoder.Encode(num))
+		hash := encoder.Encode(num)
+		hashes = append(hashes, hash)
 	}
+
+	logger.Log.Infof("Successfully generated %d hashes.", len(hashes))
 
 	err = hg.hashRepository.SaveHashBatch(hashes)
 	if err != nil {
+		logger.Log.Errorf("Failed to save hash batch: %v", err)
 		return err
 	}
+
+	logger.Log.Infof("Successfully saved %d hashes to the repository.", len(hashes))
 
 	return nil
 }

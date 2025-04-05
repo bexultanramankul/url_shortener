@@ -25,12 +25,20 @@ func NewServer() *Server {
 	uniqueIdRepo := repository.NewUniqueIdRepository(storage.DB)
 	urlCacheRepo := repository.NewUrlCacheRepository()
 
+	logger.Log.Info("Repositories initialized: URL, Hash, UniqueId, UrlCache")
+
 	hashGenerator := generator.NewHashGenerator(uniqueIdRepo, hashRepo)
 	hashCache := cache.NewHashCache(hashRepo, uniqueIdRepo, hashGenerator)
+	logger.Log.Info("Hash generator and hash cache initialized.")
+
 	urlUsecase := usecase.NewUrlUsecase(urlRepo, urlCacheRepo, hashCache)
+	logger.Log.Info("URL usecase initialized.")
+
 	urlHandler := handler.NewUrlHandler(urlUsecase)
+	logger.Log.Info("URL handler initialized.")
 
 	router := httpdelivery.NewRouter(urlHandler)
+	logger.Log.Info("Router initialized.")
 
 	return &Server{
 		Router: router,
@@ -41,7 +49,7 @@ func (s *Server) Run() {
 	port := config.AppConfig.Server.Port
 	addr := fmt.Sprintf(":%s", port)
 
-	logger.Log.Info("Starting server on port ", port)
+	logger.Log.Infof("Starting server on port %s...", port)
 
 	if err := http.ListenAndServe(addr, s.Router); err != nil {
 		logger.Log.Fatal("Server error: ", err)

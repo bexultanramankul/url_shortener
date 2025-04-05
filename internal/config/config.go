@@ -11,6 +11,7 @@ type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
 	Redis    RedisConfig    `mapstructure:"redis"`
+	Cache    CacheConfig    `mapstructure:"cache"`
 }
 
 type ServerConfig struct {
@@ -32,6 +33,15 @@ type RedisConfig struct {
 	Password string `mapstructure:"password"`
 	DB       int    `mapstructure:"db"`
 	TTLHours int    `mapstructure:"ttl_hours"`
+}
+
+type CacheConfig struct {
+	Size                  int `mapstructure:"size"`
+	RefillThreshold       int `mapstructure:"refill_threshold"`
+	FetchBatchSize        int `mapstructure:"fetch_batch_size"`
+	InitialHashCount      int `mapstructure:"initial_hash_count"`
+	InitialHashBatchSize  int `mapstructure:"initial_hash_batch_size"`
+	WaitTimeBeforeRetryMs int `mapstructure:"wait_time_before_retry"`
 }
 
 var AppConfig Config

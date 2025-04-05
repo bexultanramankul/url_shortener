@@ -4,15 +4,12 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"url_shortener/internal/config"
 	"url_shortener/internal/repository"
 	"url_shortener/internal/usecase/generator"
 	"url_shortener/pkg/logger"
 	"url_shortener/pkg/queue"
 )
-
-const cacheSize = 10
-const refillThreshold = 2
-const fetchBatchSize = 10
 
 type HashCache interface {
 	GetHash() (string, error)
@@ -37,7 +34,7 @@ func NewHashCache(
 		hashRepository:     hashRepository,
 		uniqueIdRepository: uniqueIdRepository,
 		hashGenerator:      hashGenerator,
-		hashes:             queue.NewHashQueue(cacheSize),
+		hashes:             queue.NewHashQueue(config.AppConfig.Cache.Size),
 		done:               make(chan struct{}),
 	}
 	cache.initFreeHashes()
@@ -47,9 +44,8 @@ func NewHashCache(
 func (c *hashCache) initFreeHashes() {
 	logger.Log.Info("Initializing hash cache...")
 
-	err := c.hashGenerator.GenerateHashBatch(cacheSize * 2)
+	err := c.checkAndGenerateHashesToDB()
 	if err != nil {
-		logger.Log.Info("Failed to generate hashes: %v", err)
 		return
 	}
 
@@ -65,15 +61,14 @@ func (c *hashCache) GetHash() (string, error) {
 		default:
 			hash, ok := c.hashes.Pop()
 			if ok {
-				if c.hashes.Size() < refillThreshold {
+				if c.hashes.Size() < config.AppConfig.Cache.RefillThreshold {
+					logger.Log.Info("Cache size is below threshold, triggering refill...")
 					go c.fetchFreeHashes()
 				}
 				return hash, nil
 			}
 			logger.Log.Info("Cache empty, waiting for refill...")
-			time.Sleep(100 * time.Millisecond)
-
-			//TODO: repo getHash
+			time.Sleep(time.Duration(config.AppConfig.Cache.WaitTimeBeforeRetryMs) * time.Millisecond)
 		}
 	}
 }
@@ -82,6 +77,7 @@ func (c *hashCache) fetchFreeHashes() {
 	c.mu.Lock()
 	if c.isRefilling {
 		c.mu.Unlock()
+		logger.Log.Debug("Refill already in progress, skipping fetch.")
 		return
 	}
 	c.isRefilling = true
@@ -94,16 +90,44 @@ func (c *hashCache) fetchFreeHashes() {
 	}()
 
 	logger.Log.Info("Fetching new hashes...")
-	hashes, err := c.hashRepository.GetHashBatch(fetchBatchSize)
+	hashes, err := c.hashRepository.GetHashBatch(config.AppConfig.Cache.FetchBatchSize)
 	if err != nil {
-		logger.Log.Info("Failed to fetch new hashes: %v", err)
+		logger.Log.Errorf("Failed to fetch new hashes from repository: %v", err)
 		return
 	}
 
-	c.hashes.PushAll(hashes)
-	logger.Log.Info("Added %d new hashes to cache.", len(hashes))
+	if len(hashes) == 0 {
+		logger.Log.Warn("No new hashes fetched. Retrying in the next cycle...")
+	} else {
+		c.hashes.PushAll(hashes)
+		logger.Log.Infof("Successfully added %d new hashes to the cache.", len(hashes))
+	}
 
-	//TODO: generator hashes if there is not enough hash in the database
+	go func() {
+		err := c.checkAndGenerateHashesToDB()
+		if err != nil {
+			return
+		}
+	}()
+}
+
+func (c *hashCache) checkAndGenerateHashesToDB() error {
+	logger.Log.Info("Checking hash count in the database...")
+	count, err := c.hashRepository.GetHashCount()
+	if err != nil {
+		return fmt.Errorf("failed to get hash count from repository: %v", err)
+	}
+
+	if count < config.AppConfig.Cache.InitialHashCount {
+		logger.Log.Infof("Hash count in database (%d) is less than required (%d), generating new hashes.", count, config.AppConfig.Cache.InitialHashCount)
+		err := c.hashGenerator.GenerateHashBatch(config.AppConfig.Cache.InitialHashBatchSize)
+		if err != nil {
+			return fmt.Errorf("failed to generate hashes: %v", err)
+		}
+		logger.Log.Infof("Successfully generated %d new hashes.", config.AppConfig.Cache.InitialHashBatchSize)
+	}
+
+	return nil
 }
 
 func (c *hashCache) Shutdown() {

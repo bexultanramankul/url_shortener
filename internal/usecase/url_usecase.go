@@ -18,36 +18,40 @@ func NewUrlUsecase(urlRepository repository.UrlRepository, urlCacheRepository re
 
 func (us *UrlUsecase) ShortenUrl(url string) (string, error) {
 	hash, err := us.hashCache.GetHash()
-
 	if err != nil {
+		logger.Log.Errorf("Error getting hash from cache: %v", err)
 		return "", err
 	}
 
 	err = us.urlRepository.Save(url, hash)
 	if err != nil {
+		logger.Log.Errorf("Error saving URL to repository: %v", err)
 		return "", err
 	}
 
-	us.urlCacheRepository.Save(url, hash)
+	err = us.urlCacheRepository.Save(url, hash)
+	if err != nil {
+		logger.Log.Warnf("Error caching URL %s: %v", url, err)
+	}
 
 	return hash, nil
 }
 
 func (us *UrlUsecase) GetUrl(hash string) (string, error) {
 	cachedUrl, err := us.urlCacheRepository.Get(hash)
-
 	if err == nil && cachedUrl != "" {
 		return cachedUrl, nil
 	}
 
 	url, err := us.urlRepository.FindUrlByHash(hash)
 	if err != nil {
+		logger.Log.Errorf("Error finding URL in repository for hash %s: %v", hash, err)
 		return "", err
 	}
 
 	err = us.urlCacheRepository.Save(hash, url)
 	if err != nil {
-		logger.Log.Warn("Error caching URL: ", err)
+		logger.Log.Warnf("Error caching URL for hash %s: %v", hash, err)
 	}
 
 	return url, nil

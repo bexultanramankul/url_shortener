@@ -15,3 +15,11 @@ redis:
   password: ""
   db: 0
   ttl_hours: 6
+
+cache:
+  size: 10000
+  refill_threshold: 2000
+  fetch_batch_size: 8000
+  initial_hash_count: 16000
+  initial_hash_batch_size: 16000
+  wait_time_before_retry: 100 # in milliseconds
