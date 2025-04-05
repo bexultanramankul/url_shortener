@@ -16,6 +16,10 @@ func main() {
 	storage.InitDB()
 	defer storage.CloseDB()
 
+	logger.Log.Info("Connecting to the redis server...")
+	storage.InitRedis()
+	defer storage.CloseRedis()
+
 	server := server.NewServer()
 	server.Run()
 }

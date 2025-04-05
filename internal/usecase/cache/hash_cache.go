@@ -47,14 +47,12 @@ func NewHashCache(
 func (c *hashCache) initFreeHashes() {
 	logger.Log.Info("Initializing hash cache...")
 
-	// Генерация хешей
 	err := c.hashGenerator.GenerateHashBatch(cacheSize * 2)
 	if err != nil {
 		logger.Log.Info("Failed to generate hashes: %v", err)
 		return
 	}
 
-	// Запуск потока для пополнения хешей
 	go c.fetchFreeHashes()
 	logger.Log.Info("Hash cache initialized.")
 }

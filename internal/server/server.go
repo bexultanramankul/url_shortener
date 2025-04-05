@@ -22,11 +22,12 @@ type Server struct {
 func NewServer() *Server {
 	urlRepo := repository.NewUrlRepository(storage.DB)
 	hashRepo := repository.NewHashRepository(storage.DB)
-	uniqueRepo := repository.NewUniqueIdRepository(storage.DB)
+	uniqueIdRepo := repository.NewUniqueIdRepository(storage.DB)
+	urlCacheRepo := repository.NewUrlCacheRepository()
 
-	hashGenerator := generator.NewHashGenerator(uniqueRepo, hashRepo)
-	hashCache := cache.NewHashCache(hashRepo, uniqueRepo, hashGenerator)
-	urlUsecase := usecase.NewUrlUsecase(urlRepo, hashCache)
+	hashGenerator := generator.NewHashGenerator(uniqueIdRepo, hashRepo)
+	hashCache := cache.NewHashCache(hashRepo, uniqueIdRepo, hashGenerator)
+	urlUsecase := usecase.NewUrlUsecase(urlRepo, urlCacheRepo, hashCache)
 	urlHandler := handler.NewUrlHandler(urlUsecase)
 
 	router := httpdelivery.NewRouter(urlHandler)

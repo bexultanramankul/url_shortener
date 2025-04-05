@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Database DatabaseConfig `mapstructure:"database"`
+	Redis    RedisConfig    `mapstructure:"redis"`
 }
 
 type ServerConfig struct {
@@ -24,6 +25,13 @@ type DatabaseConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     string `mapstructure:"port"`
 	SSLMode  string `mapstructure:"sslmode"`
+}
+
+type RedisConfig struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+	TTLHours int    `mapstructure:"ttl_hours"`
 }
 
 var AppConfig Config

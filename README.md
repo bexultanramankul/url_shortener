@@ -10,6 +10,8 @@ go get github.com/spf13/viper
 
 go get github.com/gorilla/mux
 
+github.com/redis/go-redis/v9
+
 ![Описание изображения](images/url-shortener.png)
 
 ![Описание изображения](images/api.png)

@@ -9,3 +9,9 @@ database:
   host: "localhost"
   port: "5432"
   sslmode: "disable"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+  ttl_hours: 6
