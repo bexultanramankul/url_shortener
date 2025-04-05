@@ -1,1 +1,2 @@
-DROP SEQUENCE IF EXISTS unique_number_seq;
+ALTER TABLE url
+    DROP CONSTRAINT unique_url;
